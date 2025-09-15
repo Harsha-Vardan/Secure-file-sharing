@@ -1,95 +1,88 @@
+import { useNavigate } from "react-router-dom";
+import { Shield, Lock, Timer, Users, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Lock, Clock, Download, ArrowRight } from "lucide-react";
 
-export function Hero() {
-  const scrollToUpload = () => {
-    const uploadSection = document.getElementById('upload-section');
-    uploadSection?.scrollIntoView({ behavior: 'smooth' });
-  };
+export const Hero = () => {
+  const navigate = useNavigate();
 
   return (
-    <section className="relative overflow-hidden bg-gradient-hero text-white">
-      <div className="absolute inset-0 bg-black/10" />
-      
-      <div className="relative container mx-auto px-4 py-20">
-        <div className="max-w-4xl mx-auto text-center space-y-8">
-          {/* Badge */}
-          <Badge 
-            variant="outline" 
-            className="border-white/20 text-white bg-white/10 backdrop-blur-sm"
-          >
+    <section className="relative py-20 bg-gradient-to-br from-primary/5 via-background to-primary/10 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center space-y-12">
+          <Badge variant="outline" className="text-sm">
             <Shield className="h-3 w-3 mr-1" />
-            AES-256 Encrypted File Sharing
+            End-to-End Encrypted File Sharing
           </Badge>
 
-          {/* Headline */}
-          <div className="space-y-4">
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-              Share Files
-              <br />
-              <span className="text-accent-light">Securely</span>
+          <div className="space-y-6">
+            <h1 className="text-4xl sm:text-6xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Share Files Securely
             </h1>
-            <p className="text-xl md:text-2xl text-white/80 max-w-2xl mx-auto">
-              End-to-end encrypted file sharing with automatic expiration. 
-              Your files are encrypted in your browser before upload.
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Upload, encrypt, and share your files with confidence. Every file is encrypted 
+              in your browser before upload, ensuring maximum security and privacy.
             </p>
           </div>
 
-          {/* Features */}
-          <div className="grid md:grid-cols-3 gap-6 max-w-3xl mx-auto">
-            <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-lg">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Lock className="h-5 w-5" />
+          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-card border">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Lock className="h-6 w-6 text-primary" />
               </div>
-              <div className="text-left">
-                <h3 className="font-semibold">Client-side Encryption</h3>
-                <p className="text-sm text-white/70">AES-256 encryption in browser</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-lg">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div className="text-left">
-                <h3 className="font-semibold">Auto Expiration</h3>
-                <p className="text-sm text-white/70">Time & download limits</p>
+              <div className="text-center">
+                <h3 className="font-semibold mb-2">Client-Side Encryption</h3>
+                <p className="text-sm text-muted-foreground">
+                  Files are encrypted with AES-256 in your browser before upload
+                </p>
               </div>
             </div>
             
-            <div className="flex items-center gap-3 p-4 bg-white/10 backdrop-blur-sm rounded-lg">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Download className="h-5 w-5" />
+            <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-card border">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Timer className="h-6 w-6 text-primary" />
               </div>
-              <div className="text-left">
-                <h3 className="font-semibold">Simple Sharing</h3>
-                <p className="text-sm text-white/70">One-click secure links</p>
+              <div className="text-center">
+                <h3 className="font-semibold mb-2">Smart Expiration</h3>
+                <p className="text-sm text-muted-foreground">
+                  Set time limits and download counts for automatic cleanup
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-center gap-4 p-6 rounded-xl bg-card border">
+              <div className="p-3 bg-primary/10 rounded-full">
+                <Users className="h-6 w-6 text-primary" />
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold mb-2">Easy Sharing</h3>
+                <p className="text-sm text-muted-foreground">
+                  Generate secure links that work on any device
+                </p>
               </div>
             </div>
           </div>
 
-          {/* CTA */}
-          <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button 
-              onClick={scrollToUpload}
-              variant="outline"
-              size="xl"
-              className="border-white text-white hover:bg-white hover:text-primary transition-bounce"
+              size="lg" 
+              className="text-lg px-8"
+              onClick={() => navigate("/auth")}
             >
-              Start Sharing Securely
-              <ArrowRight className="h-5 w-5 ml-2" />
+              Start Sharing Now
+              <ChevronRight className="ml-2 h-5 w-5" />
             </Button>
-            <p className="text-sm text-white/60">
-              No registration required • Files up to 100MB • Free to use
-            </p>
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="text-lg px-8"
+              onClick={() => navigate("/auth")}
+            >
+              Learn More
+            </Button>
           </div>
         </div>
       </div>
-
-      {/* Decorative elements */}
-      <div className="absolute top-10 left-10 w-20 h-20 bg-white/5 rounded-full blur-3xl" />
-      <div className="absolute bottom-10 right-10 w-32 h-32 bg-accent/20 rounded-full blur-3xl" />
     </section>
   );
-}
+};

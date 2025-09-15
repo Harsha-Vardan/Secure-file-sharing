@@ -1,26 +1,27 @@
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Hero } from "@/components/Hero";
-import { FileUpload } from "@/components/FileUpload";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is already authenticated
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/dashboard");
+      }
+    };
+    checkUser();
+  }, [navigate]);
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background/80 to-primary/5">
       <Header />
       <Hero />
-      
-      <section id="upload-section" className="py-16 bg-gradient-subtle">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Upload Your File</h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-              Select a file, choose your security settings, and get a secure share link. 
-              All encryption happens in your browser for maximum security.
-            </p>
-          </div>
-          
-          <FileUpload />
-        </div>
-      </section>
     </div>
   );
 };

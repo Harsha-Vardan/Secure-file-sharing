@@ -14,7 +14,151 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      download_logs: {
+        Row: {
+          downloaded_at: string
+          id: string
+          ip_address: unknown | null
+          share_link_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          downloaded_at?: string
+          id?: string
+          ip_address?: unknown | null
+          share_link_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          downloaded_at?: string
+          id?: string
+          ip_address?: unknown | null
+          share_link_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "download_logs_share_link_id_fkey"
+            columns: ["share_link_id"]
+            isOneToOne: false
+            referencedRelation: "share_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      files: {
+        Row: {
+          content_type: string
+          created_at: string
+          file_size: number
+          filename: string
+          id: string
+          is_encrypted: boolean
+          original_filename: string
+          storage_path: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_type: string
+          created_at?: string
+          file_size: number
+          filename: string
+          id?: string
+          is_encrypted?: boolean
+          original_filename: string
+          storage_path: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_type?: string
+          created_at?: string
+          file_size?: number
+          filename?: string
+          id?: string
+          is_encrypted?: boolean
+          original_filename?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      share_links: {
+        Row: {
+          created_at: string
+          current_downloads: number
+          expires_at: string | null
+          file_id: string
+          id: string
+          is_active: boolean
+          max_downloads: number | null
+          password_hash: string | null
+          token: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_downloads?: number
+          expires_at?: string | null
+          file_id: string
+          id?: string
+          is_active?: boolean
+          max_downloads?: number | null
+          password_hash?: string | null
+          token: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_downloads?: number
+          expires_at?: string | null
+          file_id?: string
+          id?: string
+          is_active?: boolean
+          max_downloads?: number | null
+          password_hash?: string | null
+          token?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "share_links_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
