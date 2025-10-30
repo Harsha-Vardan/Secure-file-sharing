@@ -18,21 +18,21 @@ export type Database = {
         Row: {
           downloaded_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           share_link_id: string
           user_agent: string | null
         }
         Insert: {
           downloaded_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           share_link_id: string
           user_agent?: string | null
         }
         Update: {
           downloaded_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           share_link_id?: string
           user_agent?: string | null
         }
@@ -164,7 +164,26 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_share_link_by_token: {
+        Args: { link_token: string }
+        Returns: {
+          current_downloads: number
+          expires_at: string
+          file_id: string
+          file_size: number
+          filename: string
+          id: string
+          is_active: boolean
+          max_downloads: number
+          original_filename: string
+          storage_path: string
+          token: string
+        }[]
+      }
+      log_download: {
+        Args: { link_token: string; user_agent_text: string }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never

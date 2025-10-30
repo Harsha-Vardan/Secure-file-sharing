@@ -68,57 +68,42 @@ export const DownloadPage: React.FC = () => {
       }
 
       try {
-        // Fetch share link data
+        // Use secure function to fetch share link data
         const { data: shareLink, error: linkError } = await supabase
-          .from('share_links')
-          .select(`
-            id,
-            expires_at,
-            max_downloads,
-            current_downloads,
-            is_active,
-            file_id,
-            files (
-              id,
-              filename,
-              original_filename,
-              file_size,
-              storage_path
-            )
-          `)
-          .eq('token', token)
-          .single();
+          .rpc('get_share_link_by_token', { link_token: token });
 
-        if (linkError || !shareLink) {
+        if (linkError || !shareLink || shareLink.length === 0) {
           setError("File not found or invalid link");
           setIsLoading(false);
           return;
         }
 
+        const linkData = shareLink[0];
+
         // Check if link is expired
         const now = new Date();
-        const isExpired = shareLink.expires_at ? new Date(shareLink.expires_at) < now : false;
+        const isExpired = linkData.expires_at ? new Date(linkData.expires_at) < now : false;
         
         // Check if download limit reached
-        const limitReached = shareLink.max_downloads ? 
-          shareLink.current_downloads >= shareLink.max_downloads : false;
+        const limitReached = linkData.max_downloads ? 
+          linkData.current_downloads >= linkData.max_downloads : false;
 
-        const remainingDownloads = shareLink.max_downloads ? 
-          Math.max(0, shareLink.max_downloads - shareLink.current_downloads) : Infinity;
+        const remainingDownloads = linkData.max_downloads ? 
+          Math.max(0, linkData.max_downloads - linkData.current_downloads) : Infinity;
 
         const mockData: FileMetadata = {
-          id: shareLink.files.id,
-          filename: shareLink.files.filename,
-          original_filename: shareLink.files.original_filename,
-          fileSize: shareLink.files.file_size,
-          expiresAt: shareLink.expires_at,
-          maxDownloads: shareLink.max_downloads,
-          currentDownloads: shareLink.current_downloads,
-          isValid: shareLink.is_active && !isExpired && !limitReached,
+          id: linkData.file_id,
+          filename: linkData.filename,
+          original_filename: linkData.original_filename,
+          fileSize: linkData.file_size,
+          expiresAt: linkData.expires_at,
+          maxDownloads: linkData.max_downloads,
+          currentDownloads: linkData.current_downloads,
+          isValid: linkData.is_active && !isExpired && !limitReached,
           isExpired: isExpired || limitReached,
           remainingDownloads: typeof remainingDownloads === 'number' ? remainingDownloads : 999,
-          storage_path: shareLink.files.storage_path,
-          shareLinkId: shareLink.id,
+          storage_path: linkData.storage_path,
+          shareLinkId: linkData.id,
         };
         
         setFileData(mockData);
@@ -164,20 +149,21 @@ export const DownloadPage: React.FC = () => {
     setDownloadProgress(0);
     
     try {
-      // Log the download
+      setDownloadProgress(20);
+
+      // Use secure function to log download and update counter
       const { error: logError } = await supabase
-        .from('download_logs')
-        .insert({
-          share_link_id: fileData.shareLinkId,
-          ip_address: null,
-          user_agent: navigator.userAgent,
+        .rpc('log_download', {
+          link_token: token,
+          user_agent_text: navigator.userAgent
         });
 
       if (logError) {
-        console.warn('Failed to log download:', logError);
+        console.error('Failed to log download:', logError);
+        throw logError;
       }
 
-      setDownloadProgress(30);
+      setDownloadProgress(40);
 
       // Download from Supabase Storage
       const { data, error } = await supabase.storage
@@ -185,20 +171,6 @@ export const DownloadPage: React.FC = () => {
         .download(fileData.storage_path);
 
       if (error) throw error;
-
-      setDownloadProgress(70);
-
-      // Update download count
-      const { error: updateError } = await supabase
-        .from('share_links')
-        .update({ 
-          current_downloads: fileData.currentDownloads + 1 
-        })
-        .eq('token', token);
-
-      if (updateError) {
-        console.warn('Failed to update download count:', updateError);
-      }
 
       setDownloadProgress(90);
 
