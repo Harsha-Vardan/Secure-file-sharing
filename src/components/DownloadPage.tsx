@@ -31,6 +31,7 @@ interface FileMetadata {
   isExpired: boolean;
   remainingDownloads: number;
   storage_path: string;
+  shareLinkId: string;
 }
 
 export const DownloadPage: React.FC = () => {
@@ -50,6 +51,7 @@ export const DownloadPage: React.FC = () => {
     isExpired: false,
     remainingDownloads: 0,
     storage_path: "",
+    shareLinkId: "",
   });
   
   const [isLoading, setIsLoading] = useState(true);
@@ -116,6 +118,7 @@ export const DownloadPage: React.FC = () => {
           isExpired: isExpired || limitReached,
           remainingDownloads: typeof remainingDownloads === 'number' ? remainingDownloads : 999,
           storage_path: shareLink.files.storage_path,
+          shareLinkId: shareLink.id,
         };
         
         setFileData(mockData);
@@ -165,8 +168,8 @@ export const DownloadPage: React.FC = () => {
       const { error: logError } = await supabase
         .from('download_logs')
         .insert({
-          share_link_id: token, // This should be the share_link id, but we'll use token for now
-          ip_address: null, // Could be obtained from a service
+          share_link_id: fileData.shareLinkId,
+          ip_address: null,
           user_agent: navigator.userAgent,
         });
 
