@@ -148,42 +148,40 @@ export const DownloadPage: React.FC = () => {
     setDownloadProgress(0);
 
     try {
-      // Get client IP (in production, you'd get this from headers via edge function)
-      // For now, using a placeholder - in real implementation, call an edge function
-      const ipAddress = '0.0.0.0'; // Placeholder
+      setDownloadProgress(20);
 
-      // Log the download with rate limiting
-      const { error: logError } = await supabase.rpc('log_download', {
-        link_token: token,
-        user_agent_text: navigator.userAgent,
-        ip_addr: ipAddress
-      });
-
-      if (logError) {
-        // Check if it's a rate limit error
-        if (logError.message?.includes('Rate limit exceeded') || 
-            logError.message?.includes('Too many failed attempts')) {
-          throw new Error(logError.message);
+      // Call edge function to get signed download URL
+      const { data: downloadData, error: downloadError } = await supabase.functions.invoke(
+        'download-file',
+        {
+          body: { token }
         }
-        throw new Error('Failed to initiate download');
+      );
+
+      if (downloadError || !downloadData?.signedUrl) {
+        throw new Error(downloadError?.message || 'Failed to generate download link');
       }
 
-      setDownloadProgress(40);
+      setDownloadProgress(50);
 
-      // Download from Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('secure-files')
-        .download(fileData.storage_path);
+      // Download the file using the signed URL
+      const response = await fetch(downloadData.signedUrl);
+      
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
 
-      if (error) throw error;
+      setDownloadProgress(70);
 
+      const blob = await response.blob();
+      
       setDownloadProgress(90);
 
       // Create download link
-      const url = URL.createObjectURL(data);
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = fileData.original_filename;
+      a.download = downloadData.filename || fileData.original_filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -202,6 +200,8 @@ export const DownloadPage: React.FC = () => {
         title: "Download Complete",
         description: "File has been downloaded successfully.",
       });
+
+      setIsDownloading(false);
       
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "There was an error downloading your file. Please try again.";
