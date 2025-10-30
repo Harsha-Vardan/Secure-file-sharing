@@ -49,9 +49,11 @@ Deno.serve(async (req) => {
     }
 
     // Log the download attempt
-    const ipAddress = req.headers.get('x-forwarded-for') || 
-                     req.headers.get('x-real-ip') || 
-                     'unknown'
+    // Extract first IP from x-forwarded-for (can contain multiple IPs)
+    const forwardedFor = req.headers.get('x-forwarded-for')
+    const ipAddress = forwardedFor 
+      ? forwardedFor.split(',')[0].trim() 
+      : (req.headers.get('x-real-ip') || '0.0.0.0')
     const userAgent = req.headers.get('user-agent') || 'unknown'
 
     const { error: logError } = await supabaseAdmin.rpc('log_download', {
