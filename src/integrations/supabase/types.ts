@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      download_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          ip_address: unknown
+          success: boolean
+          token: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          ip_address: unknown
+          success?: boolean
+          token: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          ip_address?: unknown
+          success?: boolean
+          token?: string
+        }
+        Relationships: []
+      }
       download_logs: {
         Row: {
           downloaded_at: string
@@ -180,10 +204,19 @@ export type Database = {
           token: string
         }[]
       }
-      log_download: {
-        Args: { link_token: string; user_agent_text: string }
-        Returns: string
-      }
+      log_download:
+        | {
+            Args: { link_token: string; user_agent_text: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              ip_addr: unknown
+              link_token: string
+              user_agent_text: string
+            }
+            Returns: string
+          }
     }
     Enums: {
       [_ in never]: never

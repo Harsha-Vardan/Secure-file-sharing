@@ -109,7 +109,6 @@ export const DownloadPage: React.FC = () => {
         setFileData(mockData);
         setIsLoading(false);
       } catch (err) {
-        console.error('Error fetching file data:', err);
         setError("Failed to load file information");
         setIsLoading(false);
       }
@@ -143,24 +142,30 @@ export const DownloadPage: React.FC = () => {
   };
 
   const handleDownload = async () => {
-    if (!fileData.isValid || !token) return;
-    
+    if (!fileData || isDownloading) return;
+
     setIsDownloading(true);
     setDownloadProgress(0);
-    
-    try {
-      setDownloadProgress(20);
 
-      // Use secure function to log download and update counter
-      const { error: logError } = await supabase
-        .rpc('log_download', {
-          link_token: token,
-          user_agent_text: navigator.userAgent
-        });
+    try {
+      // Get client IP (in production, you'd get this from headers via edge function)
+      // For now, using a placeholder - in real implementation, call an edge function
+      const ipAddress = '0.0.0.0'; // Placeholder
+
+      // Log the download with rate limiting
+      const { error: logError } = await supabase.rpc('log_download', {
+        link_token: token,
+        user_agent_text: navigator.userAgent,
+        ip_addr: ipAddress
+      });
 
       if (logError) {
-        console.error('Failed to log download:', logError);
-        throw logError;
+        // Check if it's a rate limit error
+        if (logError.message?.includes('Rate limit exceeded') || 
+            logError.message?.includes('Too many failed attempts')) {
+          throw new Error(logError.message);
+        }
+        throw new Error('Failed to initiate download');
       }
 
       setDownloadProgress(40);
@@ -199,13 +204,12 @@ export const DownloadPage: React.FC = () => {
       });
       
     } catch (error) {
-      console.error('Download failed:', error);
+      const errorMessage = error instanceof Error ? error.message : "There was an error downloading your file. Please try again.";
       toast({
-        variant: "destructive",
         title: "Download Failed",
-        description: "Failed to download file. Please try again.",
+        description: errorMessage,
+        variant: "destructive",
       });
-    } finally {
       setIsDownloading(false);
     }
   };

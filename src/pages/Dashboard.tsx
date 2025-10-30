@@ -26,6 +26,7 @@ interface UserFile {
   filename: string;
   original_filename: string;
   file_size: number;
+  storage_path: string;
   created_at: string;
   share_links: {
     id: string;
@@ -78,12 +79,13 @@ const Dashboard = () => {
       const { data, error } = await supabase
         .from('files')
         .select(`
-          id,
-          filename,
-          original_filename,
-          file_size,
-          created_at,
-          share_links (
+  id,
+  filename,
+  original_filename,
+  file_size,
+  storage_path,
+  created_at,
+  share_links (
             id,
             token,
             expires_at,
@@ -97,7 +99,6 @@ const Dashboard = () => {
       if (error) throw error;
       setFiles(data || []);
     } catch (error) {
-      console.error('Error fetching files:', error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -114,26 +115,36 @@ const Dashboard = () => {
     });
   };
 
-  const handleDeleteFile = async (fileId: string) => {
+  const handleDeleteFile = async (fileId: string, storagePath: string) => {
     try {
-      const { error } = await supabase
-        .from('files')
+      // First, delete the file from storage
+      const { error: storageError } = await supabase.storage
+        .from("secure-files")
+        .remove([storagePath]);
+
+      if (storageError) {
+        throw new Error(`Failed to delete file from storage: ${storageError.message}`);
+      }
+
+      // Then delete the database record
+      const { error: dbError } = await supabase
+        .from("files")
         .delete()
-        .eq('id', fileId);
+        .eq("id", fileId);
 
-      if (error) throw error;
+      if (dbError) throw dbError;
 
-      await fetchFiles();
       toast({
-        title: "File Deleted",
-        description: "File has been successfully deleted.",
+        title: "File deleted",
+        description: "Your file has been completely removed from storage and database",
       });
+
+      fetchFiles();
     } catch (error) {
-      console.error('Error deleting file:', error);
       toast({
-        variant: "destructive",
         title: "Error",
-        description: "Failed to delete file. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to delete file",
+        variant: "destructive",
       });
     }
   };
@@ -273,7 +284,7 @@ const Dashboard = () => {
                         <Button
                           variant="destructive"
                           size="sm"
-                          onClick={() => handleDeleteFile(file.id)}
+                          onClick={() => handleDeleteFile(file.id, file.storage_path)}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

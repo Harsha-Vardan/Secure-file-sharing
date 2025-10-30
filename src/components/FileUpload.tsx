@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { fileTypeFromBuffer } from "file-type";
 import { 
   Upload, 
   FileText, 
@@ -66,16 +67,50 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
       return;
     }
 
-    // Validate file type (block executable files)
-    const BLOCKED_TYPES = ['.exe', '.bat', '.cmd', '.sh', '.app', '.deb', '.rpm'];
+    // Validate file extension (first layer)
+    const BLOCKED_EXTENSIONS = ['.exe', '.bat', '.cmd', '.sh', '.app', '.deb', '.rpm', '.msi', '.com', '.scr'];
     const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (BLOCKED_TYPES.includes(fileExtension)) {
+    if (BLOCKED_EXTENSIONS.includes(fileExtension)) {
       toast({
+        title: "File type not allowed",
+        description: "Executable files are not permitted for security reasons",
         variant: "destructive",
-        title: "Invalid File Type",
-        description: "Executable files are not allowed for security reasons.",
       });
+      setState(prev => ({ ...prev, isUploading: false }));
       return;
+    }
+
+    // Validate file content (magic number validation)
+    try {
+      const buffer = await file.arrayBuffer();
+      const uint8Array = new Uint8Array(buffer);
+      
+      // Check first 4100 bytes for file type detection
+      const fileType = await fileTypeFromBuffer(uint8Array.slice(0, 4100));
+      
+      // Block dangerous MIME types by content
+      const BLOCKED_MIME_TYPES = [
+        'application/x-msdownload', // .exe
+        'application/x-msdos-program',
+        'application/x-executable',
+        'application/x-sh', // shell scripts
+        'application/x-bat',
+        'application/x-deb',
+        'application/x-rpm',
+      ];
+      
+      if (fileType && BLOCKED_MIME_TYPES.includes(fileType.mime)) {
+        toast({
+          title: "File type not allowed",
+          description: "This file type is not permitted for security reasons",
+          variant: "destructive",
+        });
+        setState(prev => ({ ...prev, isUploading: false }));
+        return;
+      }
+    } catch (error) {
+      // If file type detection fails, continue with extension-based validation
+      console.warn('File type detection failed, continuing with extension validation');
     }
 
     setState(prev => ({ ...prev, isEncrypting: true, encryptionProgress: 0 }));
@@ -177,7 +212,6 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
       }
 
     } catch (error) {
-      console.error('Upload error:', error);
       toast({
         variant: "destructive",
         title: "Upload Failed",
