@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { fileTypeFromBuffer } from "file-type";
 import { 
   Upload, 
   FileText, 
@@ -54,6 +53,38 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  // Check file signatures (magic numbers) for dangerous file types
+  const checkFileMagicNumbers = (bytes: Uint8Array): boolean => {
+    if (bytes.length < 4) return false;
+
+    // Common executable file signatures
+    const signatures = [
+      { bytes: [0x4D, 0x5A], name: 'PE/DOS executable' }, // MZ (Windows EXE)
+      { bytes: [0x7F, 0x45, 0x4C, 0x46], name: 'ELF executable' }, // ELF (Linux)
+      { bytes: [0xCE, 0xFA, 0xED, 0xFE], name: 'Mach-O executable' }, // Mach-O (macOS)
+      { bytes: [0xCF, 0xFA, 0xED, 0xFE], name: 'Mach-O 64-bit' },
+      { bytes: [0xCA, 0xFE, 0xBA, 0xBE], name: 'Java class file' },
+      { bytes: [0x21, 0x3C, 0x61, 0x72, 0x63, 0x68, 0x3E], name: 'Debian package' }, // !<arch>
+    ];
+
+    // Check against known dangerous signatures
+    for (const sig of signatures) {
+      let matches = true;
+      for (let i = 0; i < sig.bytes.length; i++) {
+        if (bytes[i] !== sig.bytes[i]) {
+          matches = false;
+          break;
+        }
+      }
+      if (matches) {
+        console.warn(`Blocked file with signature: ${sig.name}`);
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   // Real file encryption and upload
   const handleRealUpload = async (file: File): Promise<void> => {
     // Validate file size (20MB max)
@@ -80,26 +111,15 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
       return;
     }
 
-    // Validate file content (magic number validation)
+    // Validate file content using magic numbers (file signatures)
     try {
       const buffer = await file.arrayBuffer();
-      const uint8Array = new Uint8Array(buffer);
+      const bytes = new Uint8Array(buffer);
       
-      // Check first 4100 bytes for file type detection
-      const fileType = await fileTypeFromBuffer(uint8Array.slice(0, 4100));
+      // Check file signatures for dangerous file types
+      const isDangerous = checkFileMagicNumbers(bytes);
       
-      // Block dangerous MIME types by content
-      const BLOCKED_MIME_TYPES = [
-        'application/x-msdownload', // .exe
-        'application/x-msdos-program',
-        'application/x-executable',
-        'application/x-sh', // shell scripts
-        'application/x-bat',
-        'application/x-deb',
-        'application/x-rpm',
-      ];
-      
-      if (fileType && BLOCKED_MIME_TYPES.includes(fileType.mime)) {
+      if (isDangerous) {
         toast({
           title: "File type not allowed",
           description: "This file type is not permitted for security reasons",
@@ -109,8 +129,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
         return;
       }
     } catch (error) {
-      // If file type detection fails, continue with extension-based validation
-      console.warn('File type detection failed, continuing with extension validation');
+      // If magic number check fails, continue with extension-based validation
+      console.warn('File signature check failed, continuing with extension validation');
     }
 
     setState(prev => ({ ...prev, isEncrypting: true, encryptionProgress: 0 }));
