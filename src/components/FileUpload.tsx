@@ -55,6 +55,29 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
 
   // Real file encryption and upload
   const handleRealUpload = async (file: File): Promise<void> => {
+    // Validate file size (20MB max)
+    const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB in bytes
+    if (file.size > MAX_FILE_SIZE) {
+      toast({
+        variant: "destructive",
+        title: "File Too Large",
+        description: "File size exceeds 20MB limit.",
+      });
+      return;
+    }
+
+    // Validate file type (block executable files)
+    const BLOCKED_TYPES = ['.exe', '.bat', '.cmd', '.sh', '.app', '.deb', '.rpm'];
+    const fileExtension = '.' + file.name.split('.').pop()?.toLowerCase();
+    if (BLOCKED_TYPES.includes(fileExtension)) {
+      toast({
+        variant: "destructive",
+        title: "Invalid File Type",
+        description: "Executable files are not allowed for security reasons.",
+      });
+      return;
+    }
+
     setState(prev => ({ ...prev, isEncrypting: true, encryptionProgress: 0 }));
     
     try {
@@ -105,8 +128,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({ onUploadComplete }) => {
 
       setState(prev => ({ ...prev, uploadProgress: 80 }));
 
-      // Create share link
-      const shareToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      // Create share link with cryptographically secure token
+      const tokenArray = new Uint8Array(32);
+      crypto.getRandomValues(tokenArray);
+      const shareToken = Array.from(tokenArray, byte => byte.toString(16).padStart(2, '0')).join('');
       
       let expiresAt = null;
       if (state.expirationTime && state.expirationTime !== 'never') {

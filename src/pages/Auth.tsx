@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { z } from "zod";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,21 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Lock, Mail, Eye, EyeOff } from "lucide-react";
+
+const signInSchema = z.object({
+  email: z.string().trim().email({ message: "Invalid email address" }).max(255),
+  password: z.string().min(1, { message: "Password is required" }),
+});
+
+const signUpSchema = z.object({
+  email: z.string().trim().email({ message: "Invalid email address" }).max(255),
+  password: z.string()
+    .min(8, { message: "Password must be at least 8 characters" })
+    .regex(/[A-Z]/, { message: "Password must contain at least one uppercase letter" })
+    .regex(/[a-z]/, { message: "Password must contain at least one lowercase letter" })
+    .regex(/[0-9]/, { message: "Password must contain at least one number" }),
+  displayName: z.string().trim().min(2, { message: "Name must be at least 2 characters" }).max(100),
+});
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -35,9 +51,12 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
+      // Validate input
+      const validated = signInSchema.parse({ email, password });
+
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: validated.email,
+        password: validated.password,
       });
 
       if (error) {
@@ -54,11 +73,19 @@ const Auth = () => {
         navigate("/dashboard");
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: error.errors[0].message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
@@ -79,15 +106,18 @@ const Auth = () => {
     }
 
     try {
+      // Validate input
+      const validated = signUpSchema.parse({ email, password, displayName });
+
       const redirectUrl = `${window.location.origin}/dashboard`;
       
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: validated.email,
+        password: validated.password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            display_name: displayName,
+            display_name: validated.displayName,
           },
         },
       });
@@ -105,11 +135,19 @@ const Auth = () => {
         });
       }
     } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-      });
+      if (error instanceof z.ZodError) {
+        toast({
+          variant: "destructive",
+          title: "Validation Error",
+          description: error.errors[0].message,
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "An unexpected error occurred. Please try again.",
+        });
+      }
     } finally {
       setIsLoading(false);
     }
