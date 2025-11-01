@@ -40,6 +40,7 @@ interface UserFile {
 
 const Dashboard = () => {
   const [user, setUser] = useState<any>(null);
+  const [displayName, setDisplayName] = useState<string>("");
   const [files, setFiles] = useState<UserFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
@@ -54,6 +55,16 @@ const Dashboard = () => {
         return;
       }
       setUser(session.user);
+      
+      // Fetch user profile to get display name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', session.user.id)
+        .single();
+      
+      setDisplayName(profile?.display_name || session.user.email?.split('@')[0] || 'User');
+      
       await fetchFiles();
       setIsLoading(false);
     };
@@ -195,7 +206,7 @@ const Dashboard = () => {
               <Files className="h-8 w-8 text-primary" />
               <div>
                 <h1 className="text-xl font-semibold">SecureShare Dashboard</h1>
-                <p className="text-sm text-muted-foreground">Welcome back, {user?.email}</p>
+                <p className="text-sm text-muted-foreground">Welcome back, {displayName}</p>
               </div>
             </div>
             <Button variant="outline" onClick={handleSignOut}>
