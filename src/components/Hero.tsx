@@ -1,11 +1,9 @@
 import { useNavigate } from "react-router-dom";
-import { Shield, Lock, Timer, Users, ChevronRight } from "lucide-react";
+import { Shield, Lock, Timer, Users, ChevronRight, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
 export const Hero = () => {
   const navigate = useNavigate();
-
   return (
     <section className="relative py-20 bg-gradient-to-br from-primary/5 via-background to-primary/10 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
